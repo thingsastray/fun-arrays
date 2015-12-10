@@ -1,12 +1,27 @@
 var dataset = require('./dataset.json');
 
+var bankBalances = dataset.bankBalances.map(function (balance){
+  return {
+    amount: balance.amount,
+    state: balance.state
+  };
+});
+
+function roundTo (amount, state){
+  var result = parseFloat(amount);
+  result = result.toFixed(state);
+  result = parseFloat(result);
+  return result; //result needs to be a number
+}
+
 /*
   create an array with accounts from bankBalances that are
   greater than 100000.00
   assign the resulting array to `hundredThousandairs`
 */
-var hundredThousandairs = null;
-
+var hundredThousandairs = bankBalances.filter(function (balance){
+  return parseInt(balance.amount) > 100000;
+});
 /*
   set a new key for each object in bankBalances named `rounded`
   the value of this key will be the `amount` rounded to the nearest dollar
@@ -18,7 +33,13 @@ var hundredThousandairs = null;
     }
   assign the resulting array to `roundedDollar`
 */
-var roundedDollar = null;
+var roundedDollar = bankBalances.map(function (balance){
+  return {
+    amount: balance.amount,
+    state: balance.state,
+    rounded: Math.round(balance.amount)
+  };
+});
 
 /*
   set a the `amount` value for each object in bankBalances
@@ -30,10 +51,18 @@ var roundedDollar = null;
     }
   assign the resulting array to `roundedDime`
 */
-var roundedDime = null;
+var roundedDime = bankBalances.map(function (balance){
+  return {
+    amount: roundTo(balance.amount, 1),
+    state: balance.state
+  };
+});
 
 // set sumOfBankBalances to the sum of all amounts in bankBalances
-var sumOfBankBalances = null;
+var sumOfBankBalances = bankBalances.reduce(function (sum, newBalance) {
+  var result = sum + roundTo(newBalance.amount, 2);
+  return roundTo(result, 2); 
+}, 0);
 
 /*
   set sumOfInterests to the sum of the 18.9% interest
@@ -47,7 +76,33 @@ var sumOfBankBalances = null;
     Delaware
   the result should be rounded to the nearest cent
  */
-var sumOfInterests = null;
+var sumOfInterests = bankBalances.filter(function (balance){
+  var selectStates = ['WI', 'IL', 'WY', 'OH', 'GA', 'DE'];
+  return (selectStates.indexOf(balance.state) > -1);
+})
+.reduce(function (prev, curr){
+  var newAmount = roundTo(curr.amount * 0.189, 2);
+  return roundTo(prev + newAmount, 2); 
+}, 0);
+
+/*
+  aggregate the sum of bankBalance amounts
+  grouped by state
+  set stateSums to be a hash table
+    where the key is the two letter state abbreviation
+    and the value is the sum of all amounts from that state
+      the value must be rounded to the nearest cent
+ */
+var stateSums = bankBalances.reduce(function (prevAccount, currAccount){
+  
+  if (!prevAccount.hasOwnProperty(currAccount.state)) {
+    prevAccount [currAccount.state] = 0;
+  }
+  prevAccount[currAccount.state] += parseFloat(currAccount.amount);
+  prevAccount[currAccount.state] = Math.round(prevAccount[currAccount.state]*100)/100;
+  return prevAccount;
+}, {});
+
 
 /*
   set sumOfHighInterests to the sum of the 18.9% interest
@@ -63,17 +118,22 @@ var sumOfInterests = null;
     Delaware
   the result should be rounded to the nearest cent
  */
-var sumOfHighInterests = null;
-
-/*
-  aggregate the sum of bankBalance amounts
-  grouped by state
-  set stateSums to be a hash table
-    where the key is the two letter state abbreviation
-    and the value is the sum of all amounts from that state
-      the value must be rounded to the nearest cent
- */
-var stateSums = null;
+var sumOfHighInterests = Object.keys(stateSums).filter(function (balance){
+  var selectStates = ['WI', 'IL', 'WY', 'OH', 'GA', 'DE'];
+  return (selectStates.indexOf(balance) <= -1);
+})
+.map(function(stateKey){
+  return{
+    state: stateKey,
+    interest: Math.round(stateSums[stateKey] * 0.189 * 100)/100
+  };
+})
+.filter(function(balance){
+  return balance.interest > 50000;
+})
+ .reduce(function (prev, curr){
+    return roundTo(prev + curr.interest, 2);
+ }, 0);
 
 /*
   set lowerSumStates to an array containing
